@@ -497,35 +497,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>地图查看器</title>
 <style>
-:root{--bg:#f4f6f8;--surface:#fff;--line:#d9e0e8;--text:#17202a;--muted:#697586;--accent:#0f766e}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif}
+:root{--bg:#f4f6f8;--surface:#fff;--line:#d9e0e8;--text:#17202a;--muted:#697586;--accent:#0f766e;--dark:#17202a}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif;overflow:hidden}
 header{height:60px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line)}
 h1{font-size:18px;margin:0}.path{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 button{min-height:34px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--text);padding:6px 11px;cursor:pointer}
-main{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 60px)}
+.header-left{display:flex;align-items:center;gap:10px;min-width:0}.title-block{min-width:0}.menu-btn{display:none}
+main{display:grid;grid-template-columns:240px 1fr;height:calc(100vh - 60px);min-height:0}
 aside{background:var(--surface);border-right:1px solid var(--line);padding:10px;overflow:auto}.tree-node{width:100%;margin-bottom:6px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tree-node.active{border-color:var(--accent);color:var(--accent);background:#ecfdf5}
-.wrap{overflow:auto;padding:24px}.stage{position:relative;width:min(100%,960px);aspect-ratio:var(--ratio,16/9);margin:0 auto;border:1px solid var(--line);border-radius:8px;background-color:#eef2f6;box-shadow:0 12px 32px rgba(15,23,42,.12);overflow:hidden}.map-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+.wrap{position:relative;overflow:hidden;padding:24px;touch-action:none}.stage{position:relative;width:min(100%,960px);aspect-ratio:var(--ratio,16/9);margin:0 auto;border:1px solid var(--line);border-radius:8px;background-color:#eef2f6;box-shadow:0 12px 32px rgba(15,23,42,.12);overflow:hidden;transform-origin:center center;will-change:transform}.map-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
 .map-link{position:absolute;z-index:2;transform:translate(-50%,-50%);border:1px solid rgba(15,118,110,.55);border-radius:6px;background:rgba(255,255,255,.92);display:inline-flex;align-items:center;gap:6px;max-width:220px;min-width:34px;min-height:28px;padding:5px 8px;box-shadow:0 5px 14px rgba(15,23,42,.14);cursor:pointer}.map-link[data-placement="bottom"]{flex-direction:column-reverse;gap:2px}.icon{font-size:18px;line-height:1}.text{overflow-wrap:anywhere;line-height:1.2;font-size:14px}
-.tooltip{position:fixed;z-index:20;max-width:260px;padding:8px 10px;border-radius:6px;background:#17202a;color:#fff;font-size:13px;line-height:1.45;box-shadow:0 12px 32px rgba(15,23,42,.12);pointer-events:none}
-@media(max-width:760px){header{height:auto;align-items:flex-start;flex-direction:column}main{grid-template-columns:1fr}aside{border-right:0;border-bottom:1px solid var(--line)}}
+.viewer-controls{position:absolute;right:14px;bottom:14px;z-index:10;display:flex;gap:6px}.viewer-controls button{width:38px;height:38px;padding:0;font-size:18px;box-shadow:0 6px 18px rgba(15,23,42,.16)}
+.tooltip{position:fixed;z-index:20;max-width:260px;padding:8px 10px;border-radius:6px;background:var(--dark);color:#fff;font-size:13px;line-height:1.45;box-shadow:0 12px 32px rgba(15,23,42,.12);pointer-events:none}
+.drawer-backdrop{display:none}.detail-card{position:fixed;left:50%;bottom:18px;z-index:30;width:min(420px,calc(100vw - 28px));transform:translateX(-50%);border:1px solid var(--line);border-radius:8px;background:#fff;box-shadow:0 18px 42px rgba(15,23,42,.22);padding:14px}.detail-card.hidden{display:none}.detail-title{font-weight:700;font-size:16px;margin:0 28px 8px 0}.detail-desc{margin:0 0 12px;color:var(--muted);line-height:1.5}.detail-actions{display:flex;justify-content:flex-end;gap:8px}.detail-close{position:absolute;right:8px;top:8px;width:30px;height:30px;min-height:30px;padding:0}
+@media(max-width:760px){body{overflow:hidden}header{height:58px;padding:8px 10px}.menu-btn{display:inline-grid;place-items:center;width:38px;height:38px;padding:0;font-size:20px}h1{font-size:16px}.path{max-width:calc(100vw - 150px)}main{display:block;height:calc(100vh - 58px)}aside{position:fixed;left:0;top:58px;bottom:0;z-index:25;width:min(82vw,320px);transform:translateX(-105%);transition:transform .2s ease;border-right:1px solid var(--line);box-shadow:12px 0 32px rgba(15,23,42,.18)}body.nav-open aside{transform:translateX(0)}.drawer-backdrop{display:none;position:fixed;inset:58px 0 0;z-index:24;background:rgba(15,23,42,.28)}body.nav-open .drawer-backdrop{display:block}.wrap{height:100%;padding:12px;background:#e8edf2}.stage{width:min(132vw,1080px);max-width:none}.map-link{min-width:30px;min-height:30px;padding:5px 7px;border-color:rgba(15,118,110,.72);background:rgba(255,255,255,.84)}.map-link.compact .text{display:none}.map-link.compact{border-radius:999px;max-width:42px}.map-link.compact .icon{font-size:19px}.viewer-controls{right:10px;bottom:10px}.tooltip{display:none}}
 </style>
 </head>
 <body>
-<header><div><h1 id="title"></h1><div id="path" class="path"></div></div><button id="backBtn">返回上级</button></header>
-<main><aside id="tree"></aside><section class="wrap"><div id="stage" class="stage"></div></section></main>
+<header><div class="header-left"><button id="menuBtn" class="menu-btn">☰</button><div class="title-block"><h1 id="title"></h1><div id="path" class="path"></div></div></div><button id="backBtn">返回上级</button></header>
+<main><aside id="tree"></aside><div id="drawerBackdrop" class="drawer-backdrop"></div><section id="wrap" class="wrap"><div id="stage" class="stage"></div><div class="viewer-controls"><button id="zoomOutBtn">−</button><button id="resetBtn">⌂</button><button id="zoomInBtn">＋</button></div></section></main>
+<div id="detailCard" class="detail-card hidden"><button id="detailClose" class="detail-close">×</button><div id="detailTitle" class="detail-title"></div><p id="detailDesc" class="detail-desc"></p><div class="detail-actions"><button id="detailEnter">进入子地图</button></div></div>
 <script>
 const project=${serializedProject};
 let currentMapId=project.rootMapId;
 let tooltip=null;
-const title=document.getElementById("title"),path=document.getElementById("path"),tree=document.getElementById("tree"),stage=document.getElementById("stage"),backBtn=document.getElementById("backBtn");
+let scale=1,panX=0,panY=0,dragging=false,lastX=0,lastY=0,pinchStartDistance=0,pinchStartScale=1,activeDetail=null;
+const pointers=new Map();
+const title=document.getElementById("title"),path=document.getElementById("path"),tree=document.getElementById("tree"),stage=document.getElementById("stage"),wrap=document.getElementById("wrap"),backBtn=document.getElementById("backBtn"),menuBtn=document.getElementById("menuBtn"),drawerBackdrop=document.getElementById("drawerBackdrop"),zoomOutBtn=document.getElementById("zoomOutBtn"),zoomInBtn=document.getElementById("zoomInBtn"),resetBtn=document.getElementById("resetBtn"),detailCard=document.getElementById("detailCard"),detailTitle=document.getElementById("detailTitle"),detailDesc=document.getElementById("detailDesc"),detailEnter=document.getElementById("detailEnter"),detailClose=document.getElementById("detailClose");
+function isMobile(){return window.matchMedia("(max-width:760px)").matches}
 function getPath(id){const names=[];let map=project.maps[id];while(map){names.unshift(map.name);map=map.parentId?project.maps[map.parentId]:null}return names.join(" / ")}
-function render(){hideTip();const map=project.maps[currentMapId];title.textContent=project.name||"地图查看器";path.textContent=getPath(currentMapId);backBtn.disabled=!map.parentId;stage.style.setProperty("--ratio",(map.width||16)+" / "+(map.height||9));stage.innerHTML="";const image=document.createElement("img");image.className="map-image";image.src=map.image;image.alt=map.name;stage.appendChild(image);map.elements.forEach(el=>{const node=document.createElement("button");node.type="button";node.className="map-link";node.dataset.placement=el.iconPlacement;node.style.left=el.x+"%";node.style.top=el.y+"%";node.innerHTML='<span class="icon"></span><span class="text"></span>';node.querySelector(".icon").textContent=el.icon||"";node.querySelector(".text").textContent=el.text||"未命名";node.addEventListener("click",()=>{if(el.kind==="submap"&&el.targetMapId&&project.maps[el.targetMapId]){hideTip();currentMapId=el.targetMapId;render()}});node.addEventListener("mouseenter",e=>showTip(e,el.description));node.addEventListener("mousemove",moveTip);node.addEventListener("mouseleave",hideTip);stage.appendChild(node)});renderTree()}
+function render(){hideTip();hideDetail();const map=project.maps[currentMapId];title.textContent=project.name||"地图查看器";path.textContent=getPath(currentMapId);backBtn.disabled=!map.parentId;stage.style.setProperty("--ratio",(map.width||16)+" / "+(map.height||9));stage.innerHTML="";const image=document.createElement("img");image.className="map-image";image.src=map.image;image.alt=map.name;stage.appendChild(image);map.elements.forEach(el=>{const node=document.createElement("button");node.type="button";node.className="map-link";node.dataset.placement=el.iconPlacement;node.style.left=el.x+"%";node.style.top=el.y+"%";node.innerHTML='<span class="icon"></span><span class="text"></span>';node.querySelector(".icon").textContent=el.icon||"";node.querySelector(".text").textContent=el.text||"未命名";node.addEventListener("click",event=>{event.stopPropagation();if(isMobile()){showDetail(el);return}if(el.kind==="submap"&&el.targetMapId&&project.maps[el.targetMapId]){hideTip();currentMapId=el.targetMapId;resetView();render()}});node.addEventListener("mouseenter",e=>{if(!isMobile())showTip(e,el.description)});node.addEventListener("mousemove",moveTip);node.addEventListener("mouseleave",hideTip);stage.appendChild(node)});renderTree();applyView()}
 function renderTree(){tree.innerHTML="";appendTree(project.maps[project.rootMapId],0)}
-function appendTree(map,depth){const btn=document.createElement("button");btn.type="button";btn.className="tree-node"+(map.id===currentMapId?" active":"");btn.style.paddingLeft=(12+depth*18)+"px";btn.textContent=map.name;btn.title=getPath(map.id);btn.onclick=()=>{currentMapId=map.id;render()};tree.appendChild(btn);map.elements.filter(el=>el.kind==="submap"&&project.maps[el.targetMapId]).forEach(el=>appendTree(project.maps[el.targetMapId],depth+1))}
+function appendTree(map,depth){const btn=document.createElement("button");btn.type="button";btn.className="tree-node"+(map.id===currentMapId?" active":"");btn.style.paddingLeft=(12+depth*18)+"px";btn.textContent=map.name;btn.title=getPath(map.id);btn.onclick=()=>{currentMapId=map.id;resetView();closeNav();render()};tree.appendChild(btn);map.elements.filter(el=>el.kind==="submap"&&project.maps[el.targetMapId]).forEach(el=>appendTree(project.maps[el.targetMapId],depth+1))}
 function showTip(e,text){if(!text)return;hideTip();tooltip=document.createElement("div");tooltip.className="tooltip";tooltip.textContent=text;document.body.appendChild(tooltip);moveTip(e)}
 function moveTip(e){if(!tooltip)return;tooltip.style.left=e.clientX+12+"px";tooltip.style.top=e.clientY+12+"px"}
 function hideTip(){if(tooltip)tooltip.remove();tooltip=null}
-backBtn.onclick=()=>{const map=project.maps[currentMapId];if(map.parentId){hideTip();currentMapId=map.parentId;render()}};
+function showDetail(el){activeDetail=el;detailTitle.textContent=el.text||"未命名";detailDesc.textContent=el.description||"没有说明。";detailEnter.style.display=el.kind==="submap"&&el.targetMapId&&project.maps[el.targetMapId]?"inline-block":"none";detailCard.classList.remove("hidden")}
+function hideDetail(){activeDetail=null;detailCard.classList.add("hidden")}
+function applyView(){scale=Math.max(.65,Math.min(4,scale));stage.style.transform="translate("+panX+"px,"+panY+"px) scale("+scale+")";document.querySelectorAll(".map-link").forEach(node=>node.classList.toggle("compact",isMobile()&&scale<1.45))}
+function resetView(){scale=1;panX=0;panY=0;applyView()}
+function zoomBy(delta){scale=Math.max(.65,Math.min(4,scale+delta));applyView()}
+function pointerDistance(){const pts=Array.from(pointers.values());if(pts.length<2)return 0;return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)}
+function closeNav(){document.body.classList.remove("nav-open")}
+backBtn.onclick=()=>{const map=project.maps[currentMapId];if(map.parentId){hideTip();currentMapId=map.parentId;resetView();render()}};
+menuBtn.onclick=()=>document.body.classList.toggle("nav-open");
+drawerBackdrop.onclick=closeNav;
+zoomOutBtn.onclick=()=>zoomBy(-.25);
+zoomInBtn.onclick=()=>zoomBy(.25);
+resetBtn.onclick=resetView;
+detailClose.onclick=hideDetail;
+detailEnter.onclick=()=>{if(activeDetail&&activeDetail.kind==="submap"&&activeDetail.targetMapId&&project.maps[activeDetail.targetMapId]){currentMapId=activeDetail.targetMapId;resetView();render()}};
+wrap.addEventListener("click",e=>{if(e.target===wrap)hideDetail()});
+wrap.addEventListener("wheel",e=>{e.preventDefault();zoomBy(e.deltaY>0?-.12:.12)},{passive:false});
+wrap.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});wrap.setPointerCapture(e.pointerId);hideDetail();if(pointers.size===1&&!e.target.closest(".map-link")){dragging=true;lastX=e.clientX;lastY=e.clientY}else if(pointers.size===2){dragging=false;pinchStartDistance=pointerDistance();pinchStartScale=scale}});
+wrap.addEventListener("pointermove",e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2&&pinchStartDistance){scale=pinchStartScale*(pointerDistance()/pinchStartDistance);applyView();return}if(dragging){panX+=e.clientX-lastX;panY+=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;applyView()}});
+function endPointer(e){pointers.delete(e.pointerId);dragging=false;if(pointers.size<2)pinchStartDistance=0}
+wrap.addEventListener("pointerup",endPointer);wrap.addEventListener("pointercancel",endPointer);window.addEventListener("resize",applyView);
 render();
 </script>
 </body>
