@@ -549,7 +549,7 @@ detailClose.onclick=hideDetail;
 detailEnter.onclick=()=>{if(activeDetail&&activeDetail.kind==="submap"&&activeDetail.targetMapId&&project.maps[activeDetail.targetMapId]){currentMapId=activeDetail.targetMapId;resetView();render()}};
 wrap.addEventListener("click",e=>{if(e.target===wrap)hideDetail()});
 wrap.addEventListener("wheel",e=>{e.preventDefault();zoomBy(e.deltaY>0?-.12:.12)},{passive:false});
-wrap.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});wrap.setPointerCapture(e.pointerId);hideDetail();if(pointers.size===1&&!e.target.closest(".map-link")){dragging=true;lastX=e.clientX;lastY=e.clientY}else if(pointers.size===2){dragging=false;pinchStartDistance=pointerDistance();pinchStartScale=scale}});
+wrap.addEventListener("pointerdown",e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});hideDetail();if(pointers.size===1&&!e.target.closest(".map-link")){wrap.setPointerCapture(e.pointerId);dragging=true;lastX=e.clientX;lastY=e.clientY}else if(pointers.size===2){wrap.setPointerCapture(e.pointerId);dragging=false;pinchStartDistance=pointerDistance();pinchStartScale=scale}});
 wrap.addEventListener("pointermove",e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2&&pinchStartDistance){scale=pinchStartScale*(pointerDistance()/pinchStartDistance);applyView();return}if(dragging){panX+=e.clientX-lastX;panY+=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;applyView()}});
 function endPointer(e){pointers.delete(e.pointerId);dragging=false;if(pointers.size<2)pinchStartDistance=0}
 wrap.addEventListener("pointerup",endPointer);wrap.addEventListener("pointercancel",endPointer);window.addEventListener("resize",applyView);
