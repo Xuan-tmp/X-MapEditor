@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -8,17 +8,177 @@ const unsavedMessage = "还没有保存！确定要离开吗？";
 const allowedImageExtensions = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 let mainWindow = null;
 let rendererHasUnsavedChanges = false;
+let settings = null;
 
-function getWritableBaseDir() {
-  return app.isPackaged ? path.dirname(process.execPath) : __dirname;
+app.setName("地图编辑器");
+
+function getSettingsPath() {
+  return path.join(app.getPath("userData"), "settings.json");
 }
 
 function getProjectsDir() {
-  return path.join(getWritableBaseDir(), "projects");
+  if (!settings?.projectsRoot) throw new Error("尚未设置项目存储位置。");
+  return settings.projectsRoot;
 }
 
 function ensureDirectory(directory) {
   fs.mkdirSync(directory, { recursive: true });
+}
+
+function loadSettings() {
+  const settingsPath = getSettingsPath();
+  try {
+    const loaded = JSON.parse(fs.readFileSync(settingsPath, "utf8"));
+    settings = { version: 1, ...loaded };
+  } catch (_error) {
+    settings = { version: 1, projectsRoot: null };
+  }
+  return settings;
+}
+
+function saveSettings() {
+  ensureDirectory(path.dirname(getSettingsPath()));
+  fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), "utf8");
+}
+
+function verifyWritableDirectory(directory) {
+  ensureDirectory(directory);
+  const testPath = path.join(directory, `.map-editor-write-test-${process.pid}-${Date.now()}`);
+  fs.writeFileSync(testPath, "ok", "utf8");
+  fs.unlinkSync(testPath);
+}
+
+function showOpenDialog(parentWindow, options) {
+  return parentWindow ? dialog.showOpenDialog(parentWindow, options) : dialog.showOpenDialog(options);
+}
+
+function showMessageBox(parentWindow, options) {
+  return parentWindow ? dialog.showMessageBox(parentWindow, options) : dialog.showMessageBox(options);
+}
+
+function hasProjects(directory) {
+  if (!directory || !fs.existsSync(directory)) return false;
+  return fs.readdirSync(directory, { withFileTypes: true }).some((entry) =>
+    entry.isDirectory() && fs.existsSync(path.join(directory, entry.name, "project.json"))
+  );
+}
+
+function uniqueDestinationPath(parent, name) {
+  const safeName = sanitizeFileName(name);
+  let candidate = path.join(parent, safeName);
+  let index = 2;
+  while (fs.existsSync(candidate)) {
+    candidate = path.join(parent, `${safeName}_${index}`);
+    index += 1;
+  }
+  return candidate;
+}
+
+function copyProjectFolders(sourceRoot, destinationRoot) {
+  if (!sourceRoot || !fs.existsSync(sourceRoot)) return 0;
+  const source = path.resolve(sourceRoot);
+  const destination = path.resolve(destinationRoot);
+  if (source === destination || destination.startsWith(`${source}${path.sep}`) || source.startsWith(`${destination}${path.sep}`)) {
+    throw new Error("迁移时，新旧项目目录不能互相包含。");
+  }
+  let copied = 0;
+  fs.readdirSync(source, { withFileTypes: true }).forEach((entry) => {
+    if (!entry.isDirectory()) return;
+    const sourceProject = path.join(source, entry.name);
+    if (!fs.existsSync(path.join(sourceProject, "project.json"))) return;
+    const destinationProject = uniqueDestinationPath(destination, entry.name);
+    fs.cpSync(sourceProject, destinationProject, { recursive: true, errorOnExist: true });
+    copied += 1;
+  });
+  return copied;
+}
+
+function getLegacyProjectsDir() {
+  const baseDir = app.isPackaged ? path.dirname(process.execPath) : __dirname;
+  return path.join(baseDir, "projects");
+}
+
+async function chooseProjectsRoot(parentWindow, options = {}) {
+  const result = await showOpenDialog(parentWindow, {
+    title: "选择项目存储位置",
+    defaultPath: settings?.projectsRoot || app.getPath("documents"),
+    buttonLabel: "使用此文件夹",
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (result.canceled || !result.filePaths[0]) return null;
+  const selectedRoot = path.resolve(result.filePaths[0]);
+  try {
+    verifyWritableDirectory(selectedRoot);
+  } catch (error) {
+    await showMessageBox(parentWindow, {
+      type: "error",
+      message: "无法使用这个文件夹",
+      detail: `应用无法在所选位置写入文件。\n\n${error.message}`,
+      buttons: ["重新选择"],
+    });
+    return chooseProjectsRoot(parentWindow, options);
+  }
+
+  const previousRoot = settings?.projectsRoot ? path.resolve(settings.projectsRoot) : null;
+  const migrationSource = previousRoot || (options.firstRun ? getLegacyProjectsDir() : null);
+  let copyExisting = false;
+  if (migrationSource && migrationSource !== selectedRoot && hasProjects(migrationSource)) {
+    const choice = await showMessageBox(parentWindow, {
+      type: "question",
+      message: options.firstRun ? "发现已有项目" : "是否复制已有项目？",
+      detail: `原位置：${migrationSource}\n新位置：${selectedRoot}\n\n复制会保留原文件，不会删除或覆盖已有项目。`,
+      buttons: ["复制已有项目", "仅更改位置", "取消"],
+      defaultId: 0,
+      cancelId: 2,
+    });
+    if (choice.response === 2) return null;
+    copyExisting = choice.response === 0;
+  }
+
+  if (copyExisting) {
+    try {
+      copyProjectFolders(migrationSource, selectedRoot);
+    } catch (error) {
+      await showMessageBox(parentWindow, {
+        type: "error",
+        message: "复制项目失败",
+        detail: `项目存储位置尚未更改，原项目仍然保留。\n\n${error.message}`,
+        buttons: ["确定"],
+      });
+      return null;
+    }
+  }
+
+  settings = { ...(settings || {}), version: 1, projectsRoot: selectedRoot };
+  saveSettings();
+  return { projectsRoot: selectedRoot, copiedExistingProjects: copyExisting };
+}
+
+async function ensureProjectsRoot() {
+  loadSettings();
+  if (settings.projectsRoot) {
+    try {
+      verifyWritableDirectory(settings.projectsRoot);
+      return true;
+    } catch (_error) {
+      settings.projectsRoot = null;
+    }
+  }
+
+  while (!settings.projectsRoot) {
+    const choice = await dialog.showMessageBox({
+      type: "info",
+      message: "请选择项目存储位置",
+      detail: "地图、图标和项目文件将保存在你选择的文件夹中。这个位置独立于安装目录，清理临时文件、升级或卸载应用都不会删除项目。",
+      buttons: ["选择文件夹", "退出"],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (choice.response === 1) return false;
+    const selected = await chooseProjectsRoot(null, { firstRun: true });
+    if (selected) return true;
+  }
+  return true;
 }
 
 function sanitizeFileName(name, fallback = "地图项目") {
@@ -254,9 +414,22 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  try { ensureDirectory(getProjectsDir()); createWindow(); }
-  catch (error) { dialog.showErrorBox("启动失败", error.message); app.quit(); }
-  app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+  ensureProjectsRoot()
+    .then((ready) => {
+      if (!ready) {
+        app.quit();
+        return;
+      }
+      ensureDirectory(getProjectsDir());
+      createWindow();
+    })
+    .catch((error) => {
+      dialog.showErrorBox("启动失败", error.message);
+      app.quit();
+    });
+  app.on("activate", () => {
+    if (settings?.projectsRoot && BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
 
@@ -322,7 +495,7 @@ ipcMain.handle("viewer:exportSingle", async (_event, payload) => {
   const embedded = cloneWithEmbeddedAssets(project, projectFilePath);
   const result = await dialog.showSaveDialog(mainWindow, {
     title: "导出单 HTML 查看器",
-    defaultPath: path.join(getWritableBaseDir(), `${sanitizeFileName(project.name || "地图")}-查看器.html`),
+    defaultPath: path.join(projectFilePath ? path.dirname(projectFilePath) : getProjectsDir(), `${sanitizeFileName(project.name || "地图")}-查看器.html`),
     filters: [{ name: "HTML 查看器", extensions: ["html"] }],
   });
   if (result.canceled || !result.filePath) return null;
@@ -333,7 +506,9 @@ ipcMain.handle("viewer:exportSingle", async (_event, payload) => {
 ipcMain.handle("viewer:exportFolder", async (_event, payload) => {
   const { template, project, projectFilePath } = payload || {};
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: "选择查看器导出位置", defaultPath: getWritableBaseDir(), properties: ["openDirectory", "createDirectory"],
+    title: "选择查看器导出位置",
+    defaultPath: projectFilePath ? path.dirname(projectFilePath) : getProjectsDir(),
+    properties: ["openDirectory", "createDirectory"],
   });
   if (result.canceled || !result.filePaths[0]) return null;
   const exportDir = uniqueDirectory(result.filePaths[0], `${project.name || "地图"}-查看器`);
@@ -344,4 +519,19 @@ ipcMain.handle("viewer:exportFolder", async (_event, payload) => {
 
 ipcMain.on("project:setDirty", (_event, hasUnsavedChanges) => {
   rendererHasUnsavedChanges = Boolean(hasUnsavedChanges);
+});
+
+ipcMain.handle("settings:get", async () => ({
+  projectsRoot: getProjectsDir(),
+  isPortable: Boolean(process.env.PORTABLE_EXECUTABLE_DIR),
+}));
+
+ipcMain.handle("settings:chooseProjectsRoot", async () => chooseProjectsRoot(mainWindow));
+
+ipcMain.handle("settings:openProjectsRoot", async () => {
+  const projectsRoot = getProjectsDir();
+  ensureDirectory(projectsRoot);
+  const error = await shell.openPath(projectsRoot);
+  if (error) throw new Error(error);
+  return { projectsRoot };
 });

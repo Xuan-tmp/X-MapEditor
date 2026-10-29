@@ -22,6 +22,8 @@
           <button id="openProjectBtn">打开项目</button>
           <button id="exportSingleBtn">导出单 HTML</button>
           <button id="exportFolderBtn">导出文件夹</button>
+          <button id="storageSettingsBtn" title="更改项目存储位置">项目位置</button>
+          <button id="openProjectsDirBtn" title="打开项目存储文件夹">打开目录</button>
         </div>
       </header>
 
@@ -30,6 +32,10 @@
           <div class="panel-head">
             <h2>地图层级</h2>
             <button id="backParentBtn" title="返回上级地图">↑</button>
+          </div>
+          <div class="storage-summary">
+            <span>项目存储位置</span>
+            <div id="storagePathDisplay">正在读取…</div>
           </div>
           <div id="mapTree" class="map-tree"></div>
         </aside>

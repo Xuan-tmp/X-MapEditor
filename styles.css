@@ -151,6 +151,28 @@ button.primary {
   padding: 10px;
 }
 
+.storage-summary {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc;
+}
+
+.storage-summary span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.storage-summary div {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tree-node {
   width: 100%;
   justify-content: flex-start;

@@ -6,11 +6,14 @@
     openProjectBtn: document.getElementById("openProjectBtn"),
     exportSingleBtn: document.getElementById("exportSingleBtn"),
     exportFolderBtn: document.getElementById("exportFolderBtn"),
+    storageSettingsBtn: document.getElementById("storageSettingsBtn"),
+    openProjectsDirBtn: document.getElementById("openProjectsDirBtn"),
     mainImageInput: document.getElementById("mainImageInput"),
     openProjectInput: document.getElementById("openProjectInput"),
     iconImageInput: document.getElementById("iconImageInput"),
     backParentBtn: document.getElementById("backParentBtn"),
     mapTree: document.getElementById("mapTree"),
+    storagePathDisplay: document.getElementById("storagePathDisplay"),
     currentPath: document.getElementById("currentPath"),
     addInfoBtn: document.getElementById("addInfoBtn"),
     addSubmapBtn: document.getElementById("addSubmapBtn"),
@@ -100,6 +103,7 @@
   let projectFilePath = null;
   let projectFileName = null;
   let projectDir = null;
+  let projectsRoot = null;
   let assetUrls = {};
 
   const makeId = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -271,6 +275,21 @@
     projectFilePath = info.projectFilePath || projectFilePath;
     projectFileName = info.projectFileName || projectFileName;
     projectDir = info.projectDir || projectDir;
+    projectsRoot = info.projectsDir || projectsRoot;
+  }
+
+  function applyStorageSettings(info) {
+    if (!info?.projectsRoot) return;
+    projectsRoot = info.projectsRoot;
+    els.storagePathDisplay.textContent = projectsRoot;
+    els.storagePathDisplay.title = projectsRoot;
+    els.storageSettingsBtn.title = `当前项目存储位置：${projectsRoot}\n点击更改`;
+    els.openProjectsDirBtn.title = `打开：${projectsRoot}`;
+  }
+
+  async function loadStorageSettings() {
+    if (!nativeApi?.getSettings) return;
+    applyStorageSettings(await nativeApi.getSettings());
   }
 
   function getProjectStatusText() {
@@ -351,6 +370,8 @@
     els.deleteElementBtn.disabled = !getSelectedElement();
     els.exportSingleBtn.disabled = !hasProject;
     els.exportFolderBtn.disabled = !hasProject || !nativeApi;
+    els.storageSettingsBtn.disabled = !nativeApi;
+    els.openProjectsDirBtn.disabled = !nativeApi;
     els.saveProjectBtn.disabled = !hasProject;
     els.backParentBtn.disabled = !getCurrentMap()?.parentId;
     els.currentPath.textContent = hasProject ? getMapPath(currentMapId) : "请先新建项目";
@@ -755,6 +776,18 @@ wrap.onwheel=function(e){e.preventDefault();scale+=e.deltaY>0?-.12:.12;applyView
     downloadFile(`${project.name || "地图"}-查看器.html`, html, "text/html;charset=utf-8");
   }
 
+  els.storageSettingsBtn.onclick = async () => {
+    try {
+      const result = await nativeApi.chooseProjectsRoot();
+      if (!result) return;
+      applyStorageSettings(result);
+      const copiedMessage = result.copiedExistingProjects ? "\n\n已有项目已复制到新位置，原文件仍然保留。" : "";
+      alert(`项目存储位置已更改为：\n${result.projectsRoot}${copiedMessage}\n\n当前已打开的项目仍保存在原位置，新项目将保存到新位置。`);
+    } catch (error) {
+      alert(`更改项目存储位置失败：${error.message}`);
+    }
+  };
+  els.openProjectsDirBtn.onclick = () => nativeApi.openProjectsRoot().catch((error) => alert(`无法打开项目目录：${error.message}`));
   els.newProjectBtn.onclick = () => els.mainImageInput.click();
   els.mainImageInput.onchange = async (event) => {
     try { if (event.target.files[0]) await createProjectFromImage(event.target.files[0]); }
@@ -859,5 +892,6 @@ wrap.onwheel=function(e){e.preventDefault();scale+=e.deltaY>0?-.12:.12;applyView
   window.addEventListener("beforeunload", (event) => {
     if (!nativeApi && isDirty) { event.preventDefault(); event.returnValue = unsavedMessage; }
   });
+  loadStorageSettings().catch((error) => alert(`读取项目存储设置失败：${error.message}`));
   render();
 })();

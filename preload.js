@@ -8,5 +8,8 @@ contextBridge.exposeInMainWorld("mapEditorNative", {
   importAsset: (payload) => ipcRenderer.invoke("asset:import", payload),
   exportSingleViewer: (payload) => ipcRenderer.invoke("viewer:exportSingle", payload),
   exportFolderViewer: (payload) => ipcRenderer.invoke("viewer:exportFolder", payload),
+  getSettings: () => ipcRenderer.invoke("settings:get"),
+  chooseProjectsRoot: () => ipcRenderer.invoke("settings:chooseProjectsRoot"),
+  openProjectsRoot: () => ipcRenderer.invoke("settings:openProjectsRoot"),
   setDirty: (hasUnsavedChanges) => ipcRenderer.send("project:setDirty", hasUnsavedChanges),
 });
