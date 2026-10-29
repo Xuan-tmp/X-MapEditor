@@ -1,6 +1,6 @@
 {
   "name": "local-map-editor",
-  "version": "0.102.1",
+  "version": "0.201.0",
   "description": "本地地图编辑器",
   "main": "main.js",
   "scripts": {
@@ -19,8 +19,7 @@
       "styles.css",
       "app.js",
       "main.js",
-      "preload.js",
-      "projects/**/*"
+      "preload.js"
     ],
     "directories": {
       "output": "dist"

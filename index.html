@@ -20,7 +20,8 @@
           <button id="newProjectBtn" class="primary">新建项目</button>
           <button id="saveProjectBtn">保存项目</button>
           <button id="openProjectBtn">打开项目</button>
-          <button id="exportViewerBtn">导出查看器</button>
+          <button id="exportSingleBtn">导出单 HTML</button>
+          <button id="exportFolderBtn">导出文件夹</button>
         </div>
       </header>
 
@@ -61,9 +62,20 @@
               文本
               <input id="elementText" type="text" maxlength="40">
             </label>
+            <fieldset class="icon-picker-field">
+              <legend>图标</legend>
+              <div class="icon-picker-head">
+                <div id="selectedIconPreview" class="selected-icon-preview" aria-label="当前图标"></div>
+                <button id="uploadIconBtn" type="button">上传图标</button>
+              </div>
+              <div id="iconLibrary" class="icon-library" aria-label="项目图标栏"></div>
+              <div class="icon-actions">
+                <button id="deleteIconBtn" type="button" class="danger-text">删除当前自定义图标</button>
+              </div>
+            </fieldset>
             <label>
-              图标
-              <input id="elementIcon" type="text" maxlength="8">
+              图标尺寸（屏幕像素）
+              <input id="elementIconSize" type="number" min="12" max="64" step="1">
             </label>
             <label>
               图标位置
@@ -76,6 +88,54 @@
               悬浮说明
               <textarea id="elementDescription" rows="4" maxlength="180"></textarea>
             </label>
+            <fieldset class="appearance-field">
+              <legend>文字与外观</legend>
+              <label>
+                外观预设
+                <select id="elementStylePreset">
+                  <option value="card">卡片</option>
+                  <option value="simple">简洁</option>
+                  <option value="text">纯文字</option>
+                  <option value="icon">仅图标</option>
+                  <option value="custom">自定义</option>
+                </select>
+              </label>
+              <label class="check-row"><input id="elementShowText" type="checkbox"> 显示文字</label>
+              <div class="position-grid">
+                <label>字号（像素）<input id="elementFontSize" type="number" min="10" max="48" step="1"></label>
+                <label>文字颜色<input id="elementTextColor" type="color"></label>
+              </div>
+              <label class="check-row"><input id="elementTextShadow" type="checkbox"> 显示文字阴影</label>
+              <label class="check-row"><input id="elementShowBackground" type="checkbox"> 显示背景</label>
+              <div class="position-grid">
+                <label>背景颜色<input id="elementBackgroundColor" type="color"></label>
+                <label>背景透明度（%）<input id="elementBackgroundOpacity" type="number" min="0" max="100" step="1"></label>
+              </div>
+              <label class="check-row"><input id="elementShowBorder" type="checkbox"> 显示边框</label>
+              <label>边框颜色<input id="elementBorderColor" type="color"></label>
+              <label class="check-row"><input id="elementShowShadow" type="checkbox"> 显示容器阴影</label>
+            </fieldset>
+            <fieldset class="appearance-field">
+              <legend>悬停外轮廓</legend>
+              <label class="check-row"><input id="elementShowHoverOutline" type="checkbox"> 鼠标悬停时显示</label>
+              <div class="position-grid">
+                <label>轮廓颜色<input id="elementHoverOutlineColor" type="color"></label>
+                <label>透明度（%）<input id="elementHoverOutlineOpacity" type="number" min="0" max="100" step="1"></label>
+              </div>
+              <div class="position-grid">
+                <label>宽度（像素）<input id="elementHoverOutlineWidth" type="number" min="1" max="6" step="1"></label>
+                <label>间距（像素）<input id="elementHoverOutlineOffset" type="number" min="0" max="8" step="1"></label>
+              </div>
+              <label>
+                轮廓样式
+                <select id="elementHoverOutlineStyle">
+                  <option value="solid">实线</option>
+                  <option value="dashed">虚线</option>
+                  <option value="dotted">点线</option>
+                </select>
+              </label>
+              <div id="hoverOutlinePreview" class="hover-outline-preview" tabindex="0">将鼠标移到这里预览</div>
+            </fieldset>
             <label>
               链接类型
               <select id="elementKind">
@@ -97,11 +157,11 @@
             <div class="position-grid">
               <label>
                 X
-                <input id="elementX" type="number" min="0" max="100" step="0.1">
+                <input id="elementX" type="number" min="0" step="0.01">
               </label>
               <label>
                 Y
-                <input id="elementY" type="number" min="0" max="100" step="0.1">
+                <input id="elementY" type="number" min="0" step="0.01">
               </label>
             </div>
           </form>
@@ -111,6 +171,7 @@
 
     <input id="mainImageInput" class="hidden" type="file" accept="image/*">
     <input id="openProjectInput" class="hidden" type="file" accept="application/json,.json">
+    <input id="iconImageInput" class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
 
     <template id="treeNodeTemplate">
       <button class="tree-node" type="button"></button>

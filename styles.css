@@ -114,6 +114,10 @@ button.primary {
   flex-wrap: wrap;
 }
 
+.top-actions button {
+  white-space: nowrap;
+}
+
 .workspace {
   min-height: 0;
   display: grid;
@@ -257,6 +261,14 @@ button.primary {
   padding: 5px 8px;
   box-shadow: 0 5px 14px rgba(15, 23, 42, 0.14);
   user-select: none;
+  outline: none;
+  outline-offset: var(--hover-outline-offset, 2px);
+}
+
+@media (hover: hover) {
+  .map-link:hover {
+    outline: var(--hover-outline, none);
+  }
 }
 
 .map-link[data-placement="bottom"] {
@@ -265,13 +277,34 @@ button.primary {
 }
 
 .map-link.selected {
-  outline: 3px solid rgba(29, 78, 216, 0.25);
+  outline: 3px solid rgba(29, 78, 216, 0.35) !important;
+  outline-offset: 0 !important;
   border-color: var(--accent-2);
 }
 
 .map-link .icon {
-  font-size: 18px;
+  width: var(--icon-size, 22px);
+  height: var(--icon-size, 22px);
+  font-size: var(--icon-size, 22px);
   line-height: 1;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.map-link .icon img,
+.icon-swatch img,
+.selected-icon-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.preset-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .map-link .text {
@@ -306,6 +339,78 @@ button.primary {
   padding: 14px;
 }
 
+.icon-picker-field {
+  min-width: 0;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.icon-picker-field legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.icon-picker-head,
+.icon-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.selected-icon-preview {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f8fafc;
+}
+
+.icon-library {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 180px;
+  margin: 10px 0;
+  overflow: auto;
+}
+
+.icon-choice {
+  position: relative;
+  width: 100%;
+  min-height: 46px;
+  padding: 7px;
+}
+
+.icon-choice.active {
+  outline: 2px solid rgba(29, 78, 216, 0.35);
+  border-color: var(--accent-2);
+  background: #eff6ff;
+}
+
+.icon-swatch {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  margin: auto;
+  font-size: 24px;
+}
+
+.icon-actions {
+  justify-content: flex-end;
+}
+
+.danger-text {
+  color: var(--danger);
+}
+
 .inspector-form label {
   display: grid;
   gap: 6px;
@@ -326,6 +431,59 @@ button.primary {
 
 .inspector-form textarea {
   resize: vertical;
+}
+
+.appearance-field {
+  min-width: 0;
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.appearance-field legend {
+  padding: 0 5px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.appearance-field .check-row {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.appearance-field .check-row input {
+  width: auto;
+  margin: 0;
+}
+
+.appearance-field input[type="color"] {
+  min-height: 38px;
+  padding: 3px;
+}
+
+.hover-outline-preview {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 12px;
+  outline: none;
+  outline-offset: var(--preview-outline-offset, 2px);
+}
+
+.hover-outline-preview:hover,
+.hover-outline-preview:focus-visible {
+  outline: var(--preview-outline, none);
 }
 
 .submap-controls {
